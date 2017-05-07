@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+
+<title>Unsupervised Classification</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = false;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+.tocify-subheader {
+  display: inline;
+}
+.tocify-subheader .tocify-item {
+  font-size: 0.95em;
+}
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Machine Learning and Data Mining the Gaia Archive</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="AFeatureExtractionSelection.html">Feature Extraction/Selection</a>
+</li>
+<li>
+  <a href="BUnsupervisedClassification.html">Unsupervised Classification</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+<html>
+
+<head>
+<title>Title</title>
+</head>
+
+<body>
+
+<img src="images/Footnote.png" alt="School Footer">
+
+</body>
+</html>
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Unsupervised Classification</h1>
+
+</div>
+
+
+<div id="an-illustration-with-2d-synthetic-data" class="section level2">
+<h2>An illustration with 2D synthetic data</h2>
+<p>OK. Let us first play with a very simple 2D data set created by us by sampling from two identical normal (=Gaussian) distributions with centres displaced.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;mvtnorm&quot;</span>)
+<span class="kw">set.seed</span>(<span class="dv">10</span>)
+setA &lt;-<span class="st"> </span><span class="kw">rmvnorm</span>(<span class="dv">1000</span>,<span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">0</span>),<span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>),<span class="dv">2</span>,<span class="dv">2</span>))
+setB &lt;-<span class="st"> </span><span class="kw">rmvnorm</span>(<span class="dv">1000</span>,<span class="kw">c</span>(<span class="dv">3</span>,<span class="dv">3</span>),<span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">1</span>),<span class="dv">2</span>,<span class="dv">2</span>))
+mock.data &lt;-<span class="st"> </span><span class="kw">rbind</span>(setA,setB)
+<span class="kw">plot</span>(mock.data)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<div id="the-k-means-algorithm" class="section level3">
+<h3>The k-means algorithm</h3>
+<p><span class="math inline">\(K\)</span>-means is a very popular and simple iterative algorithm for clustering. Let us learn its steps with the very simple 2 cluster 2D problem.</p>
+<p>We start by randomly selecting two points that we will take as starting solution.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">rc &lt;-<span class="st"> </span><span class="kw">sample</span>(<span class="dv">1</span>:<span class="kw">dim</span>(mock.data)[<span class="dv">1</span>],<span class="dv">2</span>)
+<span class="kw">plot</span>(mock.data)
+<span class="kw">points</span>(mock.data[rc,],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>We will then take this two points as the centres of the two clusters. We could have tried three or more clusters.</p>
+<p>If these two points are the centres of the two clusters, each cluster will be made up of the points that are closer to each centre. Closer is a word that implies many things. In particular, it implies a distance and a metric. In the following, I will assume that the metric is Euclidean, but you have various choices (Euclidean, Manhattan, L<span class="math inline">\(_\infty\)</span>) that you should consider before applying (most) clustering algorithms.</p>
+<p>A quote from <a href="http://www-stat.stanford.edu/~tibs/ElemStatLearn/">Elements of Statistical Learning</a></p>
+<p>“An appropriate dissimilarity measure is far more important in obtaining success with clustering than choice of clustering algorithm. This aspect of the problem … depends on domain specific knowledge and is less amenable to general research.”</p>
+<p>If you decide to use the euclidean distance, take into account its definition:</p>
+<p><span class="math inline">\(d(\mathbb{x},\mathbb{y}) = \sqrt(\sum_i^n (x_i-y_i)^2)\)</span></p>
+<p>If dimension <span class="math inline">\(i\)</span> has a range between 0 and, say, <span class="math inline">\(10^6\)</span> while dimension <span class="math inline">\(j\)</span> only goes from 0 to 1, differences in <span class="math inline">\(i\)</span> will dominate the distance even if they only reflect noise.</p>
+<p>Also, the choice of metric dictates the position of the centres, as we shall see later.</p>
+<p>Now, we define a function to compute 2D distances:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">d &lt;-<span class="st"> </span>function(center,data){
+  s1 &lt;-<span class="st"> </span><span class="kw">t</span>(<span class="kw">apply</span>(data,<span class="dv">1</span>,<span class="st">&quot;-&quot;</span>,center))
+  s2 &lt;-<span class="st"> </span>s1^<span class="dv">2</span>
+  s3 &lt;-<span class="st"> </span><span class="kw">apply</span>(s2,<span class="dv">1</span>,sum)
+  d &lt;-<span class="st"> </span><span class="kw">sqrt</span>(s3)
+  <span class="kw">return</span>(d)
+}</code></pre></div>
+<p>… and will assign each point to the closest centre (in the euclidean sense)</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># We define a function to do that</span>
+E &lt;-<span class="st"> </span>function(data,centres){
+  <span class="co"># First some definitions...</span>
+  n.data &lt;-<span class="st"> </span><span class="kw">dim</span>(data)[<span class="dv">1</span>]
+  n.dims &lt;-<span class="st"> </span><span class="kw">dim</span>(data)[<span class="dv">2</span>]
+  n.cl &lt;-<span class="st"> </span><span class="kw">dim</span>(centres)[<span class="dv">1</span>] 
+  dists &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="ot">NA</span>,n.data,n.cl)
+  <span class="co"># Then, compute distances from each point to each cluster centre </span>
+  for (i in <span class="dv">1</span>:n.cl) dists[,i] &lt;-<span class="st"> </span><span class="kw">d</span>(centres[i,],data)
+  <span class="co"># ... and define the cluster as the index with the minimum distance</span>
+  cluster &lt;-<span class="st"> </span><span class="kw">apply</span>(dists,<span class="dv">1</span>,which.min)
+  <span class="kw">return</span>(cluster)
+  }
+
+centres &lt;-<span class="st"> </span>mock.data[rc,]
+<span class="co"># Call the function</span>
+cluster &lt;-<span class="st"> </span><span class="kw">E</span>(mock.data,centres)
+
+<span class="kw">plot</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span>cluster)
+<span class="kw">points</span>(mock.data[rc,],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>We see that this assignment produces a linear boundary defined by the points at the same distance from the two centres. But it does not look right. This is because we have only taken the first step of a <span class="math inline">\(k\)</span>-means cycle.</p>
+<p>The second step consists of recalculating the positions of the cluster centres given the cluster assignments (partition) above:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># We define a function to recalculate the centres...</span>
+M &lt;-<span class="st"> </span>function(data,cluster){
+  labels &lt;-<span class="st"> </span><span class="kw">unique</span>(cluster)
+  n.cl &lt;-<span class="st"> </span><span class="kw">length</span>(labels)
+  n.dims &lt;-<span class="st"> </span><span class="kw">dim</span>(data)[<span class="dv">2</span>]
+  means &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="ot">NA</span>,n.cl,n.dims)
+  for (i in <span class="dv">1</span>:n.cl)  means[i,] &lt;-<span class="st"> </span><span class="kw">apply</span>(data[cluster==labels[i],],<span class="dv">2</span>,mean)
+  <span class="kw">return</span>(means)
+}
+
+means &lt;-<span class="st"> </span><span class="kw">M</span>(mock.data,cluster)
+
+<span class="kw">plot</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span>cluster)
+<span class="kw">points</span>(mock.data[rc,],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)
+<span class="kw">points</span>(means,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;green&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>So far, we have taken several decisions: 1. we have chosen to measure (dis-)similarity between elements using the euclidean distance; 2. we decided to attach a label (cluster) depending on the minimum distance to the centres; 3. and finally, we have decided to recalculate the cluster centres as the <strong>mean</strong> of (and only of) the points with a given cluster label (we could have used the median, or the closest point to the mean or the median, or…)</p>
+<p>Now, let us redo the cycle (steps 1 and 2) one more time:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cluster &lt;-<span class="st"> </span><span class="kw">E</span>(mock.data,means)
+<span class="kw">plot</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span>cluster)
+<span class="kw">points</span>(means,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>OK. If we do this over and over again, until one cycle does not produce any change in the cluster assignments and means, we have done a <span class="math inline">\(k\)</span>-means clustering.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">km &lt;-<span class="st"> </span><span class="kw">kmeans</span>(mock.data,<span class="dv">2</span>)
+<span class="kw">plot</span>(mock.data,<span class="dt">col=</span>km$cluster,<span class="dt">pch=</span><span class="dv">16</span>)
+<span class="kw">points</span>(km$centers,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+</div>
+<div id="the-ogle-data-set" class="section level2">
+<h2>The OGLE data set</h2>
+<p>So far, so good…</p>
+<p>But life is not 2D, and if Science only dealt with 2D problems, most of the field of multivariate statistics would be pointless.</p>
+<p>Let us have a look at a real (yet still simple) data set:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">data &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;OGLE.dat&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>,<span class="dt">header=</span>T)
+<span class="kw">attach</span>(data)
+
+<span class="kw">plot</span>(logP,WI,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>The data set corresponds to the <strong>OGLE III</strong> survey of <strong>periodic</strong> variable stars in the <em>Large Magellanic Cloud</em>, and the plot above shows only two of the 5 attributes that describe each source: 1. the logarithm of the period of each cycle 2. the logarithm of the first Fourier term amplitude 3. the ratio of amplitudes of the first two Fourier terms 4. the phase difference between the first two Fourier terms 5. the V-I colour index 6. the (reddening free) Wessenheit index</p>
+<p>The 5 attributes have been re-scaled between 0 and 1.</p>
+<p>The educated eye sees the classical pulsators, some extrinsic variability, and spurious structure.</p>
+<p>Unfortunately, the spurious structure overlaps with true variability (like, for example, <span class="math inline">\(\gamma\)</span> Doradus stars and Slowly Pulsating B-type variables that can have periods around 1 day). Therefore, careless cleaning (as the one practitioned below) is just wrong.</p>
+<p>The <a href="https://arxiv.org/pdf/0712.3797.pdf">variability zoo</a> is beyond the scope of this lectures, so you will have to have faith and believe me.</p>
+<p>Just as a teaser, I cannot help show you the HR diagram:</p>
+<p><br></p>
+<div class="figure">
+<img src="images/HRD_color.gif" />
+
+</div>
+<p><br></p>
+<p>OK. Let us do a quick and dirty cleaning just so that you can play with the data…</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mask &lt;-<span class="st"> </span>(logP &lt;<span class="st"> </span><span class="dv">1</span><span class="fl">-0.754</span> &amp;<span class="st"> </span>logP &gt;<span class="st"> </span><span class="dv">1</span><span class="fl">-0.76</span>) |<span class="st"> </span>(logP &lt;<span class="st"> </span><span class="dv">1</span><span class="fl">-0.827</span> &amp;<span class="st"> </span>logP &gt;<span class="st"> </span><span class="dv">1</span><span class="fl">-0.833</span>) |<span class="st"> </span>(logP &lt;<span class="st"> </span><span class="dv">1</span><span class="fl">-0.872</span> &amp;<span class="st"> </span>logP &gt;<span class="st"> </span><span class="dv">1</span><span class="fl">-0.873</span>)
+data &lt;-<span class="st"> </span>data[!mask,]
+<span class="kw">attach</span>(data)
+<span class="kw">plot</span>(logP,WI,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Now, let us try to apply <span class="math inline">\(k\)</span>-means to the OGLE data set. How many clusters will we try to derive? So far, I have given you no heuristic to decide on the optimal number of clusters. So let us try 10, just for fun:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">km10.ogle &lt;-<span class="st"> </span><span class="kw">kmeans</span>(data,<span class="dv">10</span>)
+<span class="kw">plot</span>(logP,WI,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>,<span class="dt">col=</span>km10.ogle$cluster)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>This is certainly too few. Let us try with 25 clusters:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">5</span>)
+km25.ogle &lt;-<span class="st"> </span><span class="kw">kmeans</span>(data,<span class="dv">25</span>,<span class="dt">iter.max =</span> <span class="dv">20</span>)
+<span class="kw">plot</span>(logP,WI,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>,<span class="dt">col=</span>km25.ogle$cluster)
+<span class="kw">points</span>(km25.ogle$centers[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">6</span>)],<span class="dt">col=</span><span class="kw">seq</span>(<span class="dv">1</span>,<span class="dv">25</span>),<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p>OK: we see that eclipsing binaries are separated from the RR Lyrae stars. But the Long Period Variables sequences are mixed up, despite their being clearly separated in this 2D projection.</p>
+<p>Let us try a different random seed, just to check that this was not a poor initialization:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">15</span>)
+km25.ogle &lt;-<span class="st"> </span><span class="kw">kmeans</span>(data,<span class="dv">25</span>,<span class="dt">iter.max=</span><span class="dv">20</span>)
+<span class="kw">plot</span>(logP,WI,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>,<span class="dt">col=</span>km25.ogle$cluster)
+<span class="kw">points</span>(km25.ogle$centers[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">6</span>)],<span class="dt">col=</span><span class="kw">seq</span>(<span class="dv">1</span>,<span class="dv">25</span>),<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>Ooooops. The LPVs are still mixed, <strong>and the RR Lyrae got mixed up now with the eclipsing binaries</strong>.</p>
+<p>The problem is the inclusion of an attribute that is only useful for a subset of classes:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(logP,phi21,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>,<span class="dt">col=</span>km25.ogle$cluster)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p>What happens if I remove it?</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">15</span>)
+km25.ogle &lt;-<span class="st"> </span><span class="kw">kmeans</span>(data[,-<span class="dv">4</span>],<span class="dv">25</span>,<span class="dt">iter.max=</span><span class="dv">20</span>)
+<span class="kw">plot</span>(logP,WI,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>,<span class="dt">col=</span>km25.ogle$cluster)
+<span class="kw">points</span>(km25.ogle$centers[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">5</span>)],<span class="dt">col=</span><span class="kw">seq</span>(<span class="dv">1</span>,<span class="dv">25</span>),<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/testname-1.png" width="672" /></p>
+<p>A bit better, but still insatisfactory. One would wish to remove the dependency on the random initialization, and have a guide as to how many clusters there actually are in the data. More on this later…</p>
+</div>
+<div id="expectation-maximization" class="section level2">
+<h2>Expectation-Maximization</h2>
+<p>OK. <span class="math inline">\(k\)</span>-means is just an algorithm that represents a special case of a more general one known as Expectation-Maximization.</p>
+<p>I will show you what it is by working out a practical example (learn by doing).</p>
+<p>First, let me generate again a synthetic data set taylored to highlight the main advantage of going from the particular (<span class="math inline">\(k\)</span>-means) to the general:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">10</span>)
+setA &lt;-<span class="st"> </span><span class="kw">rmvnorm</span>(<span class="dv">1000</span>,<span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">0</span>),<span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">3</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">3</span>),<span class="dv">2</span>,<span class="dv">2</span>))
+setB &lt;-<span class="st"> </span><span class="kw">rmvnorm</span>(<span class="dv">1000</span>,<span class="kw">c</span>(<span class="dv">3</span>,<span class="dv">3</span>),<span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">1</span>,<span class="fl">0.99</span>,<span class="fl">0.99</span>,<span class="dv">1</span>),<span class="dv">2</span>,<span class="dv">2</span>))
+setC &lt;-<span class="st"> </span><span class="kw">rmvnorm</span>(<span class="dv">1000</span>,<span class="kw">c</span>(-<span class="dv">1</span>,<span class="dv">4</span>),<span class="kw">matrix</span>(<span class="kw">c</span>(<span class="dv">1</span>,-<span class="fl">0.9</span>,-<span class="fl">0.9</span>,<span class="dv">1</span>),<span class="dv">2</span>,<span class="dv">2</span>))
+mock.data &lt;-<span class="st"> </span><span class="kw">rbind</span>(setA,setB,setC)
+<span class="kw">plot</span>(mock.data)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p>So this is our data set. It is two-dimensional to help illustrate the underlying concepts and the maths, but we could perfectly well try in more than 2D.</p>
+<p>Our data set consists of 3000 points drawn from three normal (=Gaussian) distributions with varying shapes and orientations. The key point to keep in mind is that the three distributions overlap in 2D space.</p>
+<p>Let us see the performance of our now-known <span class="math inline">\(k\)</span>-means technique.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">km &lt;-<span class="st"> </span><span class="kw">kmeans</span>(mock.data,<span class="dv">3</span>)
+<span class="kw">plot</span>(mock.data,<span class="dt">col=</span>km$cluster,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>)
+<span class="kw">points</span>(km$centers,<span class="dt">pch=</span><span class="dv">15</span>,<span class="dt">col=</span><span class="st">&quot;orange&quot;</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-15-1.png" width="672" /></p>
+<p>Not bad, but it clearly can be improved. We see that the distance threshold is a reasonable approach, but returns clusters of roughly the same area (not true for more than three clusters). Hence the inappropriate cluster assignments.</p>
+<p>Let me now propose a different algorithm based on the concepts introduced yesterday by René. Remember that René introduced the concept of generative model for supervised learning. It naturally lead him to define the probability of the data given the model parameters, the so-called likelihood.</p>
+<p>Since we know the true model underlying our data set, let us write down a log-likelihood function that <strong>would</strong> tell us what model parameters maximize the probability of our data set given the model.</p>
+<p><span class="math display">\[\mathcal{N}(\vec{x})=\frac{1}{(2\pi)^{k/2}}\frac{1}{\Sigma^{1/2}}\cdot e^{-\frac{1}{2}((\vec{x}-\vec{\mu})^T\Sigma^{-1}(\vec{x}-\vec{\mu}))}\]</span></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">loglikNormal &lt;-<span class="st"> </span>function(D,means,Sigmas,cluster){
+  labels &lt;-<span class="st"> </span><span class="kw">unique</span>(clusters)
+  n.cl &lt;-<span class="st"> </span><span class="kw">length</span>(labels)
+  loglik &lt;-<span class="st"> </span><span class="dv">0</span>
+  for (i in <span class="dv">1</span>:n.cl)
+  {
+  logliki &lt;-<span class="st"> </span><span class="kw">apply</span>(means[i,],<span class="dv">1</span>,dmvnorm,<span class="dt">x=</span>D[cluster==i,],<span class="dt">sigma=</span>Sigma[,,i])
+  logliki &lt;-<span class="st"> </span><span class="kw">apply</span>(logliki,<span class="dv">2</span>,sum)
+  loglik &lt;-<span class="st"> </span>loglik+logliki
+  }
+  <span class="kw">return</span>(loglik)
+}</code></pre></div>
+<p>It has four parameters: the data, the means and covariance matrices of the normal distributions, and… the cluster assignements! For three clusters and 3000 points, we have 6+9+3000. And this is 2D only.</p>
+<p>The space of parameters is <em>HUGE</em>: the means, the covariance matrices, and partitions! It is impossible that we test all possible combinations these 3015 parameters. How could we conceivably compute the likelihood in this high-dimensional space?</p>
+<p>Solution 1: the EM algorithm</p>
+<p>(Solution 2 is… go Bayesian and use MCMC!)</p>
+<p>Let us simplify the problem: assume that the three normals have the same (unknown) covariance, that the covariance is diagonal and that the two variances are equal.</p>
+<p>Then, you have <span class="math inline">\(k\)</span>-means! Except for a few subtleties…</p>
+<p>Now, let us remove some constraints: the covariance matrices can be arbitrary, and we try to maximize the log-likelihood. Difficult eh? Then, let us use the EM algorithm.</p>
+<p>The EM algorithm is an iterative algorithm to find (local) maxima of the likelihood function or the posterior distribution for models with a large amount of latent variables. It alternates the following two steps: * the E(xpectation) step: given a set of model parameters, it computes the expected value of the latent variables. And… * the M(aximization) step: given the latent values, computes the model parameters that maximize the likelihood.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">rc &lt;-<span class="st"> </span><span class="kw">sample</span>(<span class="dv">1</span>:<span class="kw">dim</span>(mock.data)[<span class="dv">1</span>],<span class="dv">3</span>)
+<span class="kw">plot</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>)
+<span class="kw">points</span>(mock.data[rc,],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)
+
+<span class="co"># We start with a random selection of points as centres...</span>
+means &lt;-<span class="st"> </span>mock.data[rc,]
+Sigmas &lt;-<span class="st"> </span><span class="kw">array</span>(<span class="dv">0</span>,<span class="dt">dim=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>))
+<span class="co"># And diagonal (unit) matrices for the covariances. </span>
+Sigmas[<span class="dv">1</span>,<span class="dv">1</span>,]=<span class="dv">1</span>
+Sigmas[<span class="dv">2</span>,<span class="dv">2</span>,]=<span class="dv">1</span>
+
+<span class="co"># And here is the function to compute the expected values of the </span>
+<span class="co"># latent variables:</span>
+E &lt;-<span class="st"> </span>function(data,means,Sigmas)
+{
+  n.cl &lt;-<span class="st"> </span><span class="kw">dim</span>(means)[<span class="dv">1</span>]
+  probs &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="ot">NA</span>,<span class="dt">nrow=</span><span class="kw">dim</span>(data)[<span class="dv">1</span>],<span class="dt">ncol=</span>n.cl)
+    for (i in <span class="dv">1</span>:n.cl)
+  {
+  probs[,i] &lt;-<span class="st"> </span><span class="kw">dmvnorm</span>(<span class="dt">x=</span>data,<span class="dt">mean=</span>means[i,],<span class="dt">sigma=</span>Sigmas[,,i])
+
+  }
+  cluster &lt;-<span class="st"> </span><span class="kw">max.col</span>(probs)
+  
+  <span class="kw">return</span>(cluster)  
+}
+
+<span class="co"># OK. let us do it:</span>
+cluster &lt;-<span class="st"> </span><span class="kw">E</span>(mock.data,means,Sigmas)
+
+<span class="kw">points</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>,<span class="dt">col=</span>cluster)
+<span class="kw">points</span>(mock.data[rc,],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p>We have accomplished the E-step, let us now complete the first cycle:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">M &lt;-<span class="st"> </span>function(data,cluster){
+  n.cl &lt;-<span class="st"> </span><span class="kw">length</span>(<span class="kw">unique</span>(cluster))
+    for (i in <span class="dv">1</span>:n.cl)
+  {
+      means[i,] &lt;-<span class="st"> </span><span class="kw">apply</span>(data[cluster==i,],<span class="dv">2</span>,mean)
+      Sigmas[,,i] &lt;-<span class="st"> </span><span class="kw">cov</span>(data[cluster==i,])  
+  }
+  M &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">means=</span>means,<span class="dt">covariances=</span>Sigmas)
+  <span class="kw">return</span>(M)
+  
+}
+
+<span class="kw">plot</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>)
+<span class="kw">points</span>(mock.data[rc,],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)
+<span class="kw">points</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>,<span class="dt">col=</span>cluster)
+<span class="kw">points</span>(mock.data[rc,],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;seagreen&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)
+
+parameters &lt;-<span class="st"> </span><span class="kw">M</span>(mock.data,cluster)
+<span class="kw">points</span>(parameters$means,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;orange&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cluster &lt;-<span class="st"> </span><span class="kw">E</span>(mock.data,parameters$means,parameters$covariances)
+<span class="kw">plot</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>,<span class="dt">col=</span>cluster)
+<span class="kw">points</span>(parameters$means,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;orange&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-18-2.png" width="672" /></p>
+<p>Looks fine! Now, let us do it until a cycle results in no changes in either the model parameters or the cluster assignments:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">for (i in <span class="dv">1</span>:<span class="dv">50</span>)
+{
+
+parameters &lt;-<span class="st"> </span><span class="kw">M</span>(mock.data,cluster)
+cluster.new &lt;-<span class="st"> </span><span class="kw">E</span>(mock.data,parameters$means,parameters$covariances)
+ndiff &lt;-<span class="st"> </span><span class="kw">sum</span>(cluster!=cluster.new)
+<span class="kw">print</span>(ndiff)
+cluster &lt;-<span class="st"> </span>cluster.new
+<span class="kw">plot</span>(mock.data,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>,<span class="dt">col=</span>cluster)
+<span class="kw">points</span>(parameters$means,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">col=</span><span class="st">&quot;orange&quot;</span>,<span class="dt">cex=</span><span class="dv">2</span>)
+if(ndiff==<span class="dv">0</span>) break
+}</code></pre></div>
+<pre><code>## [1] 221</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<pre><code>## [1] 204</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-2.png" width="672" /></p>
+<pre><code>## [1] 189</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-3.png" width="672" /></p>
+<pre><code>## [1] 173</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-4.png" width="672" /></p>
+<pre><code>## [1] 143</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-5.png" width="672" /></p>
+<pre><code>## [1] 89</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-6.png" width="672" /></p>
+<pre><code>## [1] 44</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-7.png" width="672" /></p>
+<pre><code>## [1] 8</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-8.png" width="672" /></p>
+<pre><code>## [1] 6</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-9.png" width="672" /></p>
+<pre><code>## [1] 0</code></pre>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-19-10.png" width="672" /></p>
+</div>
+<div id="density-based-clustering" class="section level2">
+<h2>Density based clustering</h2>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;dbscan&quot;</span>)
+cluster &lt;-<span class="st"> </span><span class="kw">dbscan</span>(data[,-<span class="dv">4</span>],<span class="dt">minPts =</span> <span class="dv">5</span>, <span class="dt">eps=</span><span class="fl">0.02</span>)
+mask &lt;-<span class="st"> </span>cluster$cluster !=<span class="st"> </span><span class="dv">0</span>
+<span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">6</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">6</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">2</span>,<span class="dt">col=</span>(cluster$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">2</span>,<span class="dt">col=</span>(cluster$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-2.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">3</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">3</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">2</span>,<span class="dt">col=</span>(cluster$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-3.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">4</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">4</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">2</span>,<span class="dt">col=</span>(cluster$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-4.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">5</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">5</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">2</span>,<span class="dt">col=</span>(cluster$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-5.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cluster &lt;-<span class="st"> </span><span class="kw">optics</span>(data[,-<span class="dv">4</span>],<span class="dt">minPts =</span> <span class="dv">15</span>, <span class="dt">eps=</span><span class="fl">0.02</span>)
+<span class="co">#res &lt;- optics_cut(cluster, eps_cl = 0.0195)</span>
+res &lt;-<span class="st"> </span><span class="kw">extractDBSCAN</span>(cluster, <span class="dt">eps_cl =</span> <span class="fl">0.0195</span>)
+mask &lt;-<span class="st"> </span>res$cluster !=<span class="st"> </span><span class="dv">0</span>
+column &lt;-<span class="st"> </span><span class="dv">6</span>
+<span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,column)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,column)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>,<span class="dt">col=</span>res$cluster[mask]+<span class="dv">1</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-6.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>,<span class="dt">col=</span>(res$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-7.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">3</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">3</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">2</span>,<span class="dt">col=</span>(res$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-8.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">4</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">4</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">2</span>,<span class="dt">col=</span>(res$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-9.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">5</span>)],<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">5</span>)],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">2</span>,<span class="dt">col=</span>(res$cluster[mask]+<span class="dv">1</span>))</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-20-10.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">apply</span>(data,<span class="dv">2</span>,range)</code></pre></div>
+<pre><code>##      logP    logA11 R21        phi21       V.I WI
+## [1,]    0 0.0000000   0 2.429557e-05 0.0000000  0
+## [2,]    1 0.9941714   1 9.999900e-01 0.9907912  1</code></pre>
+<p>Now, I would like you to play with the dbscan or optics parameters and see if you can find a way to separate all variability types.</p>
+<p>When I had to deal with this dataset, I actually used a different algorithm known a Hierarchical Mode Association Clustering (HMAC).</p>
+<div class="figure">
+<img src="images/HMAC-paper.jpg" />
+
+</div>
+</div>
+<div id="kohonen" class="section level2">
+<h2>Kohonen</h2>
+<p>Scheme:</p>
+<ol style="list-style-type: decimal">
+<li>Define 2D grid of neurons. Each neuron will be fully connected to the input neurons and be characterized by a vector of weights <span class="math inline">\(\mathbb{w}_i\)</span>. Initially, these vectors are drawn at random from a given distribution (e.g. the first 2 PCA components).</li>
+<li>Define a neighbourhood for each neuron.</li>
+<li>take the first data point <span class="math inline">\(\mathbb{x}_1\)</span> and calculate for each grid neuron the euclidean distance between the data point and each of the weight vectors <span class="math inline">\(\mathbb{w}_i\)</span>.</li>
+<li>Select the neuron that is closest to the input data and update its weight and those of the neurons in the neighbourhood according to <span class="math display">\[
+\mathbb{w}&#39; = \mathbb{w}+\alpha(t,d_{grid})\cdot(\mathbb{x}_1-\mathbb{w})
+\]</span></li>
+<li>Repeat steps 3. and 4. for all data points <span class="math inline">\(i:2,...,N\)</span></li>
+<li>Repeat steps 3. to 5. until convergence or a maximum number of cycles is achieved</li>
+</ol>
+<p>Let us apply it to the mock data with 3 Gaussian components that overlap in 2D:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(mock.data)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;kohonen&quot;</span>)</code></pre></div>
+<pre><code>## 
+## Attaching package: &#39;kohonen&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:maps&#39;:
+## 
+##     map</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;fields&quot;</span>)
+cluster &lt;-<span class="st"> </span><span class="kw">som</span>(mock.data)
+<span class="kw">plot</span>(cluster, <span class="dt">type=</span><span class="st">&quot;code&quot;</span>, <span class="dt">main=</span><span class="st">&quot;Main&quot;</span>) </code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-21-2.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(cluster, <span class="dt">type=</span><span class="st">&quot;changes&quot;</span>, <span class="dt">main=</span><span class="st">&quot;Changes&quot;</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-21-3.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(cluster, <span class="dt">type =</span> <span class="st">&quot;property&quot;</span>, <span class="dt">property =</span> cluster$codes[[<span class="dv">1</span>]][,<span class="dv">2</span>], <span class="dt">main=</span><span class="kw">names</span>(cluster$data)[<span class="dv">2</span>], <span class="dt">palette.name=</span>tim.colors)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-21-4.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(cluster, <span class="dt">type=</span><span class="st">&quot;dist.neighbours&quot;</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-21-5.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(cluster, <span class="dt">type=</span><span class="st">&quot;count&quot;</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-21-6.png" width="672" /></p>
+</div>
+<div id="hierarchical-agglomerative-connectivity-based-clustering" class="section level2">
+<h2>Hierarchical agglomerative (connectivity based) clustering</h2>
+<p>Start with one cluster per data point, and iteratively merge at each steps the two clusters that are ‘closer’ together, with distance between clusters measured as: * <strong>single-linkage</strong> the minimum distance amongst all pairs of points that we can define with one in cluster <span class="math inline">\(C_i\)</span> and another in cluster <span class="math inline">\(C_j\)</span> * <strong>average linkage</strong> the average distance amongst all pairs of points… * <strong>complete linkage</strong> the maximum distance for all pairs… * <strong>centroid linkage</strong> the distance between the centre of mass of each clusters, or the data point closer to it. * <strong>minimum energy linkage</strong> similar to the average linkage but a penalization term that include the intra-cluster variances for <span class="math inline">\(C_i\)</span> and <span class="math inline">\(C_j\)</span> * <strong>wards metric</strong>: merge the two clusters that yield the smallest increase in the total intracluster variance.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sample &lt;-<span class="st"> </span><span class="kw">sample</span>(<span class="kw">dim</span>(data)[<span class="dv">1</span>],<span class="dv">10000</span>)
+dists &lt;-<span class="st"> </span><span class="kw">dist</span>(data[sample,])
+<span class="co">#dists &lt;- dist(data)</span>
+clusters &lt;-<span class="st"> </span><span class="kw">hclust</span>(dists, <span class="dt">method =</span> <span class="st">&#39;average&#39;</span>)
+<span class="co">#clusters &lt;- hclust(dists, method = &#39;ward.D&#39;)</span>
+<span class="co">#clusters &lt;- hclust(dists, method = &#39;ward.D2&#39;)</span>
+<span class="co">#clusters &lt;- hclust(dists, method = &#39;single&#39;)</span>
+<span class="co">#clusters &lt;- hclust(dists, method = &#39;complete&#39;)</span>
+<span class="co">#clusters &lt;- hclust(dists, method = &#39;centroid&#39;)</span>
+<span class="co">#clusters &lt;- hclust(dists, method = &#39;median&#39;)</span>
+<span class="co">#clusters &lt;- hclust(dists, method = &#39;mcquitty&#39;)</span>
+<span class="kw">plot</span>(clusters)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/hclust-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">clusterCut &lt;-<span class="st"> </span><span class="kw">cutree</span>(clusters, <span class="dt">k=</span><span class="dv">15</span>)
+<span class="co">#plot(data[,1],data[,6], col=clusterCut,pch=16,cex=.3)</span>
+<span class="kw">plot</span>(data[sample,<span class="dv">1</span>],data[sample,<span class="dv">6</span>], <span class="dt">col=</span>clusterCut,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">3</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/hclust-2.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">clusterCut &lt;-<span class="st"> </span><span class="kw">cutree</span>(clusters, <span class="dt">k=</span><span class="dv">200</span>)
+<span class="co">#plot(data[,1],data[,4], col=clusterCut,pch=16,cex=.3)</span>
+<span class="kw">plot</span>(data[sample,<span class="dv">1</span>],data[sample,<span class="dv">4</span>], <span class="dt">col=</span>clusterCut,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">3</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/hclust-3.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">dists &lt;-<span class="st"> </span><span class="kw">dist</span>(data[sample,-<span class="dv">4</span>])
+<span class="co">#dists &lt;- dist(data[,-4])</span>
+clusters &lt;-<span class="st"> </span><span class="kw">hclust</span>(dists, <span class="dt">method =</span> <span class="st">&#39;average&#39;</span>)
+clusterCut &lt;-<span class="st"> </span><span class="kw">cutree</span>(clusters, <span class="dt">k=</span><span class="dv">200</span>)
+<span class="co">#plot(data[,1],data[,4], col=clusterCut,pch=16,cex=.3)</span>
+<span class="kw">plot</span>(data[sample,<span class="dv">1</span>],data[sample,<span class="dv">4</span>], <span class="dt">col=</span>clusterCut,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">3</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/hclust-4.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">clusters &lt;-<span class="st"> </span><span class="kw">hclust</span>(dists, <span class="dt">method =</span> <span class="st">&#39;single&#39;</span>)
+clusterCut &lt;-<span class="st"> </span><span class="kw">cutree</span>(clusters, <span class="dt">k=</span><span class="dv">200</span>)
+<span class="co">#plot(data[,1],data[,4], col=clusterCut,pch=16,cex=.3)</span>
+<span class="kw">plot</span>(data[sample,<span class="dv">1</span>],data[sample,<span class="dv">4</span>],<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">3</span>, <span class="dt">col=</span>clusterCut)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/hclust-5.png" width="672" /></p>
+</div>
+<div id="subspace-clustering" class="section level2">
+<h2>Subspace clustering</h2>
+<p>Subspace clustering starts from the hypothesis that, although the data set has been drawn from a multi-variate distribution in D dimensions (usually <span class="math inline">\(\mathbb{R}^D\)</span>), each cluster lives in a linear or affine subspace of the original space. Imagine for example, a data set in 3D, where the data points lie in 1. two planes for clusters 1 &amp; 2 2. a line for cluster 3</p>
+<p>The data set is the union of sets from each of the subspaces. The objective then is to find at the same time the cluster assignments, and the subspace definitions.</p>
+<p>In mathematical terms, each subspace is defined as</p>
+<p><span class="math display">\[
+S_i = {x \in \mathbb{R}^D: x=\mathbb{\mu}_i+U_i\cdot\mathbb{y}}
+\]</span></p>
+<p>where <span class="math inline">\(U_i\)</span> is a matrix with the subspace basis vectors as columns, <span class="math inline">\(\mathbb{y}\)</span> are the new coordinates in that basis, and <span class="math inline">\(\mathbb{\mu}_i\)</span> is the centre (in the case of affine subspaces). Our goal is to find the <span class="math inline">\(\mathbb{\mu}_i\)</span>, <span class="math inline">\(U_i\)</span>, the dimensionality <span class="math inline">\(d_i\)</span> of each subspace, and the cluster labels.</p>
+<p>This can be achieved in a number of ways (see <a href="this%20introduction">http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.225.2898</a> for a comprehensive, yet not particularly clear introduction):</p>
+<ul>
+<li><p>Algebraic methods</p></li>
+<li><p>Generative methods</p></li>
+<li><p>Spectral methods</p></li>
+</ul>
+<p>Here I will only explain the iterative version which is the simplest, although some of the features are shared amongst the various methods.</p>
+<p>In the iterative approach, we start from a (possibly random) initial clustering (like, for example, <span class="math inline">\(k\)</span>-means). Then, we alternate to steps consisting of:</p>
+<ol style="list-style-type: decimal">
+<li>Calculating the Principal Components for each cluster and projecting the entire data set onto the first <span class="math inline">\(d_i\)</span> components.</li>
+<li>Reassigning the points to the clusters that minimizes the reconstruction error, where the reconstruction error is defined as</li>
+</ol>
+<p><span class="math display">\[
+||\mathbb{x}_j-(\mathbb{\mu}_i-U_i\cdot\mathbb{y}_j)||
+\]</span></p>
+<p>Problems: * the subspaces are linear</p>
+<ul>
+<li><p>we have to have an initial clustering</p></li>
+<li><p>We need to fix a priori the number of clusters and the dimensionality of the subspaces</p></li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;orclus&quot;</span>)
+cluster &lt;-<span class="st"> </span><span class="kw">orclus</span>(data,<span class="dt">k=</span><span class="dv">10</span>,<span class="dt">l=</span><span class="dv">3</span>,<span class="dt">k0=</span><span class="dv">50</span>,<span class="dt">inner.loops=</span><span class="dv">20</span>)</code></pre></div>
+<pre><code>## iteration         : 1 
+## Initialization with 50 clusters</code></pre>
+<pre><code>## Warning: did not converge in 10 iterations</code></pre>
+<pre><code>## Actual Subspace dimension : 6 
+## New number of clusters    : 25 
+## 
+## iteration         : 2 
+## Actual Subspace dimension : 4 
+## New number of clusters    : 12 
+## 
+## iteration         : 3 
+## Actual Subspace dimension : 3 
+## New number of clusters    : 10 
+## 
+## Final reassigment...</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(data[,<span class="dv">1</span>],data[,<span class="dv">6</span>],<span class="dt">col=</span>cluster$cluster,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">for(i in <span class="dv">1</span>:<span class="kw">length</span>(cluster$size)) {
+<span class="kw">plot</span>(<span class="kw">as.matrix</span>(data) %*%<span class="st"> </span>cluster$subspaces[[i]], <span class="dt">col =</span> cluster$cluster, <span class="dt">ylab =</span> <span class="kw">paste</span>(<span class="st">&quot;Identified subspace for cluster&quot;</span>,i))
+}</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-2.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-3.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-4.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-5.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-6.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-7.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-8.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-9.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-10.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-11.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#for(i in 1:length(cluster$size)) {</span>
+for(i in <span class="dv">1</span>:<span class="dv">5</span>) {
+mask &lt;-<span class="st"> </span>cluster$cluster==i
+<span class="kw">plot</span>(data[,<span class="dv">1</span>],data[,<span class="dv">6</span>],<span class="dt">col=</span><span class="st">&quot;black&quot;</span>,<span class="dt">pch=</span><span class="st">&quot;.&quot;</span>)
+<span class="kw">points</span>(data[mask,<span class="dv">1</span>],data[mask,<span class="dv">6</span>],<span class="dt">col=</span><span class="st">&quot;red&quot;</span>,<span class="dt">pch=</span><span class="dv">16</span>,<span class="dt">cex=</span>.<span class="dv">5</span>)
+}</code></pre></div>
+<p><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-12.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-13.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-14.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-15.png" width="672" /><img src="BUnsupervisedClassification_files/figure-html/unnamed-chunk-22-16.png" width="672" /></p>
+</div>
+<div id="spectral-clustering" class="section level2">
+<h2>Spectral clustering</h2>
+<p>Spectral clustering can be better understood if we view the data set as an undirected graph. In the graph, data points are vertices that are connected by links with strength or weight. The weight is supposed to reflect the similarity between two vertices (points).</p>
+<ul>
+<li><p>In principle, the graph can be constructed including links between all pairs of points, although this may be too computer intensive (imagine the case of Gaia wih <span class="math inline">\(10^9\)</span> points: we would need <span class="math inline">\(10^18\)</span> links). If we need to simplify the affinity matrix, we can include only links to points within an <span class="math inline">\(\epsilon\)</span>-hyperball, or only to the <span class="math inline">\(k\)</span>-nearest neighbours (this needs to be made symmetric).</p></li>
+<li><p>Once we have the vertices and links/arcs, there are several ways to decide how we measure affinity or similarity (the weights). In the <span class="math inline">\(\epsilon\)</span>-neighbourhood, there is no strong need to define a weight (they could all be set to one). But in the fully connected graph, we need a measure of affinity that has to be positive and symmetric for all pairs of points <span class="math inline">\(\mathbb{x}_i\)</span> and <span class="math inline">\(\mathbb{x}_j\)</span>. The most popular by far is the Gaussian kernel:</p></li>
+</ul>
+<p><span class="math display">\[s_{ij}=s(\mathbb{x}_i,\mathbb{x}_j) = K(\mathbb{x}_i,\mathbb{x}_j) = \exp(\frac{-||\mathbb{x}_i-\mathbb{x}_j||^2}{2\sigma^2})\]</span></p>
+<p>Let <span class="math inline">\(S={s_{ij}}\)</span> be the matrix of similarity (or adjancency) of the graph.</p>
+<p>Now it would be time to look at the <em>kernel trick</em> but we do not have time. There are other choices of kernel to measure similarity.</p>
+<ul>
+<li><p>So, in summary we are left with a graph which we want to partition. We would like to divide the graph into disjoint sets of vertices such that vertices within one partition have strong links, while at the same time links that cross cluster frontiers have weak weights. How do we do this? The answer has to do with Laplace…</p></li>
+<li><p>One obvious (and potentially wrong) way to partition the graph is to find the cluster assignments that minimize</p></li>
+</ul>
+<p><span class="math display">\[
+\mathcal{W}=\sum_{i=1}^{k} S(C_i,\neg{C_i})=\sum_{k\in C,k\in \neg{C_i}} s(j,k)
+\]</span></p>
+<p>where C and C’ are two clusters in our partition. It is potentially wrong because in many scenarios, the optimal solution would be to separate a single point. Hence, we need to bias the minimization process to avoid singular clusters. We could minimize <span class="math inline">\(\mathcal{W}\)</span> divided (scaled) by the cluster size (which we can approximate by 1. the number of vertices or 2. the so-called partition volume).</p>
+<ul>
+<li>It turns out (but I will not prove it; it involves the Rayleigh-Ritz theorem) that minimizing (the scaled versions of) <span class="math inline">\(\mathcal{W}\)</span> <strong>under some relaxation of the conditions</strong> is equivalent to finding the eigenvectors of the so-called Laplace matrix. Depending on the scaling of , the Laplace matrix can be normalized or unnormalized (but this is just jargon):</li>
+</ul>
+<ol style="list-style-type: decimal">
+<li><span class="math inline">\(L = D - S\)</span>, the unnormalized Laplace matrix (scaling by the number of vertices)</li>
+<li>Normalized Laplace matrices:</li>
+</ol>
+<ul>
+<li><span class="math inline">\(L_{sym}=D^{-1/2}LD{^{-1/2}}\)</span></li>
+<li><span class="math inline">\(L_{rw} = D^{-1}L\)</span></li>
+</ul>
+<p>where <span class="math inline">\(D\)</span> is the diagonal matrix formed by</p>
+<p><span class="math display">\[d_{i}=\sum_{j=1}^{n}s(i,j) \]</span></p>
+<div class="figure">
+<img src="images/ULaplacianProperties.png" alt="Properties of the unnormalized Laplacian" />
+<p class="caption">Properties of the unnormalized Laplacian</p>
+</div>
+<p>A subset <span class="math inline">\(A \subset V\)</span> of a graph is connected if any two vertices in <span class="math inline">\(A\)</span> can be joined by a path such that all intermediate points also lie in <span class="math inline">\(A\)</span>.</p>
+<p>A subset <span class="math inline">\(A\)</span> is called a connected component if it is connected and if there are no connections between vertices in <span class="math inline">\(A\)</span> and <span class="math inline">\(\bar{A}\)</span>.</p>
+<p>The nonempty sets <span class="math inline">\(A_1, A_2, ..., A_k\)</span> form a partition of the graph if <span class="math inline">\(A_i\cap A_j=\emptyset\)</span> and <span class="math inline">\(A_1\cup A_2\cup ... A_k=V\)</span>.</p>
+<div class="figure">
+<img src="images/SpectralClustering2.png" alt="The spectrum-clustering connection" />
+<p class="caption">The spectrum-clustering connection</p>
+</div>
+<ul>
+<li>Now, once we have the graph fully specified, <strong>spectral clustering</strong> proceeds by computing the eigenvectors/eigenvalues of the Laplacian, and aplying <span class="math inline">\(k\)</span>-means to the rows of the <span class="math inline">\(U\)</span> matrix.</li>
+</ul>
+<div id="spectral-clustering-with-the-unnormalized-laplacian" class="section level3">
+<h3>Spectral clustering with the unnormalized Laplacian</h3>
+<div class="figure">
+<img src="images/unnormalized.png" alt="Excerpt from the tutorial by Ulrike von Luxburg" />
+<p class="caption">Excerpt from the <a href="http://link.springer.com/article/10.1007/s11222-007-9033-z">tutorial by Ulrike von Luxburg</a></p>
+</div>
+<p>The (justified) hope is that the new space of characteristics is more separable than the original one.</p>
+</div>
+<div id="spectral-clustering-with-the-normalized-symmetric-laplacian" class="section level3">
+<h3>Spectral clustering with the normalized symmetric Laplacian</h3>
+<div class="figure">
+<img src="images/normalized1.png" alt="Excerpt from the tutorial by Ulrike von Luxburg" />
+<p class="caption">Excerpt from the <a href="http://link.springer.com/article/10.1007/s11222-007-9033-z">tutorial by Ulrike von Luxburg</a></p>
+</div>
+</div>
+<div id="spectral-clustering-with-the-normalized-random-walk-laplacian" class="section level3">
+<h3>Spectral clustering with the normalized random walk Laplacian</h3>
+<div class="figure">
+<img src="images/normalized2.png" alt="Excerpt from the tutorial by Ulrike von Luxburg" />
+<p class="caption">Excerpt from the <a href="http://link.springer.com/article/10.1007/s11222-007-9033-z">tutorial by Ulrike von Luxburg</a></p>
+</div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#library(kernlab)</span>
+##cluster &lt;- specc(as.matrix(data[sample,]),centers=5,kernel=&quot;rbfdot&quot;,kpar=&quot;automatic&quot;)
+<span class="co">#cluster &lt;- specc(as.matrix(data),centers=5,kernel=&quot;rbfdot&quot;,kpar=&quot;automatic&quot;)</span>
+
+<span class="co">#plot(data[,1],data[,6],col=cluster,pch=&quot;.&quot;)</span></code></pre></div>
+</div>
+</div>
+<div id="clustering-evaluation-measures" class="section level2">
+<h2>Clustering evaluation measures</h2>
+<div id="connectedness" class="section level3">
+<h3>Connectedness</h3>
+<div class="figure">
+<img src="images/connectedness.jpg" alt="Excerpt from the R clValid [package description] (ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf)" />
+<p class="caption">Excerpt from the R clValid [package description] (<a href="ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf" class="uri">ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf</a>)</p>
+</div>
+</div>
+<div id="silhouette-width" class="section level3">
+<h3>Silhouette width</h3>
+<div class="figure">
+<img src="images/silhouette1.jpg" />
+
+</div>
+<div class="figure">
+<img src="images/silhouette2.jpg" alt="Excerpt from the R clValid [package description] (ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf)" />
+<p class="caption">Excerpt from the R clValid [package description] (<a href="ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf" class="uri">ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf</a>)</p>
+</div>
+</div>
+<div id="dunn-index" class="section level3">
+<h3>Dunn index</h3>
+<div class="figure">
+<img src="images/dunn.jpg" alt="Excerpt from the R clValid [package description] (ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf)" />
+<p class="caption">Excerpt from the R clValid [package description] (<a href="ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf" class="uri">ftp://cran.r-project.org/pub/R/web/packages/clValid/vignettes/clValid.pdf</a>)</p>
+</div>
+<div id="section" class="section level61">
+<p></p>
+</div>
+</div>
+</div>
+
+<html>
+
+<head>
+<title>Title</title>
+</head>
+
+<body>
+
+<img src="images/Footnote.png" alt="School Footer">
+
+</body>
+</html>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

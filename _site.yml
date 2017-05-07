@@ -1,0 +1,13 @@
+name: "Machine Learning and Data Mining the Gaia Archive"
+navbar:
+  title: "Machine Learning and Data Mining the Gaia Archive"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Feature Extraction/Selection"
+      href: AFeatureExtractionSelection.html
+    - text: "Unsupervised Classification"
+      href: BUnsupervisedClassification.html
+output_dir: "."      
+      
+      

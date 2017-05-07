@@ -1,0 +1,21 @@
+---
+title: "Luis Sarro Lectures at Zanjan, International School on Star Clusters with Gaia"
+output: 
+  html_document:
+    highlight: tango
+    toc: true
+    toc_float:
+      collapsed: false
+    include:
+      before_body: [footer.html]
+---
+
+<style type="text/css">
+.title {
+  display: none;
+}
+
+</style>
+
+# International School on Star Clusters with Gaia, School Lectures by Luis M. Sarro
+Machine Learning and Data Mining the Gaia Archive
