@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+
+<title>Bayesian Inference</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; background-color: #f8f8f8; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+pre, code { background-color: #f8f8f8; }
+code > span.kw { color: #204a87; font-weight: bold; } /* Keyword */
+code > span.dt { color: #204a87; } /* DataType */
+code > span.dv { color: #0000cf; } /* DecVal */
+code > span.bn { color: #0000cf; } /* BaseN */
+code > span.fl { color: #0000cf; } /* Float */
+code > span.ch { color: #4e9a06; } /* Char */
+code > span.st { color: #4e9a06; } /* String */
+code > span.co { color: #8f5902; font-style: italic; } /* Comment */
+code > span.ot { color: #8f5902; } /* Other */
+code > span.al { color: #ef2929; } /* Alert */
+code > span.fu { color: #000000; } /* Function */
+code > span.er { color: #a40000; font-weight: bold; } /* Error */
+code > span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #000000; } /* Constant */
+code > span.sc { color: #000000; } /* SpecialChar */
+code > span.vs { color: #4e9a06; } /* VerbatimString */
+code > span.ss { color: #4e9a06; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #000000; } /* Variable */
+code > span.cf { color: #204a87; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #ce5c00; font-weight: bold; } /* Operator */
+code > span.pp { color: #8f5902; font-style: italic; } /* Preprocessor */
+code > span.ex { } /* Extension */
+code > span.at { color: #c4a000; } /* Attribute */
+code > span.do { color: #8f5902; font-weight: bold; font-style: italic; } /* Documentation */
+code > span.an { color: #8f5902; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #8f5902; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #8f5902; font-weight: bold; font-style: italic; } /* Information */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = false;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+.tocify-subheader {
+  display: inline;
+}
+.tocify-subheader .tocify-item {
+  font-size: 0.95em;
+}
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Machine Learning and Data Mining the Gaia Archive</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="AFeatureExtractionSelection.html">Feature Extraction/Selection</a>
+</li>
+<li>
+  <a href="BUnsupervisedClassification.html">Unsupervised Classification</a>
+</li>
+<li>
+  <a href="CBayesianInference.html">Bayesian Inference</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+<html>
+
+<head>
+<title>Title</title>
+</head>
+
+<body>
+
+<img src="images/Footnote.png" alt="School Footer">
+
+</body>
+</html>
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Bayesian Inference</h1>
+
+</div>
+
+
+<div id="the-frequentist-approach" class="section level1">
+<h1>The frequentist approach</h1>
+<p>The likelihood in Eq. (1) of <a href="http://iopscience.iop.org/article/10.1086/683116/pdf">Bailer-Jones (2015)</a></p>
+<div class="figure">
+<img src="/home/lsb/Im%C3%A1genes/Selecci%C3%B3n_024.png" alt="The parallax likelihood" />
+<p class="caption">The parallax likelihood</p>
+</div>
+<p>I will later cite this as</p>
+<p><span class="math inline">\(p(\theta|\mathcal{D})\)</span></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">likelihood &lt;-<span class="st"> </span>function(p,d,s_p)
+  {
+    if (s_p &lt;<span class="st"> </span><span class="dv">0</span>) <span class="kw">print</span>(<span class="st">&quot;Error. Parallax uncertainties must be positive.&quot;</span>)
+    const =<span class="st"> </span><span class="fl">1.0</span>/(<span class="kw">sqrt</span>(<span class="fl">2.0</span>*pi)*s_p)
+    XTSX =<span class="st"> </span>(<span class="fl">1.0</span>/(<span class="kw">sqrt</span>(<span class="fl">2.0</span>)*s_p))*(p-(<span class="fl">1.0</span>/d))
+    lik &lt;-<span class="st"> </span>const*<span class="kw">exp</span>(-XTSX^<span class="dv">2</span>)
+    <span class="kw">return</span>(lik)
+}</code></pre></div>
+<p>OK. Let us do some examples</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">s_p &lt;-<span class="st"> </span><span class="fl">0.01</span> <span class="co"># Imagine we have 10 milliarcsecond uncertainties</span>
+d.true &lt;-<span class="st"> </span><span class="dv">100</span> <span class="co"># The distance measured in parsecs</span>
+p.true &lt;-<span class="st"> </span><span class="dv">1</span>/d.true <span class="co"># in arcseconds</span></code></pre></div>
+<p>Now let us evaluate the likelihood for some potential values of the observed parallax</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">nr.values &lt;-<span class="st"> </span><span class="dv">200</span>
+values &lt;-<span class="st"> </span><span class="kw">seq</span>(p.true<span class="dv">-5</span>*s_p,p.true<span class="dv">+5</span>*s_p,<span class="dt">length.out=</span>nr.values)
+tmp &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA</span>,nr.values)
+for (i in <span class="dv">1</span>:<span class="kw">length</span>(values))
+{
+tmp[i] &lt;-<span class="st"> </span><span class="kw">likelihood</span>(values[i],d.true,s_p)  
+}
+<span class="kw">plot</span>(values,tmp, <span class="dt">ty=</span><span class="st">&quot;l&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;Parallax&quot;</span>, <span class="dt">ylab=</span><span class="st">&quot;Likelihood&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Is this normalized as a function of the measurement?</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">require</span>(caTools)</code></pre></div>
+<pre><code>## Loading required package: caTools</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">trapz</span>(values,tmp)</code></pre></div>
+<pre><code>## [1] 0.3829242</code></pre>
+<p>Yes (to within numeric precision)</p>
+<p>Now… is it normalized as a function of distance?</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(<span class="fl">1.0</span>/values,tmp, <span class="dt">ty=</span><span class="st">&quot;l&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;Distance in parsecs&quot;</span>, <span class="dt">ylab=</span><span class="st">&quot;Likelihood&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Please, play with the values of the uncertainty for a while.</p>
+<p>What is the expected uncertainty for Gaia measurements? From GAIA ASTROMETRIC SCIENCE PERFORMANCE POST-LAUNCH PREDICTIONS by J.H.J. de Bruijne, K.L.J. Rygl and T. Antoja <a href="http://arxiv.org/pdf/1502.00791.pdf" class="uri">http://arxiv.org/pdf/1502.00791.pdf</a></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Gaia_s_p &lt;-<span class="st"> </span>function(VminusI,G)
+{
+  z =<span class="st"> </span><span class="kw">apply</span>(<span class="kw">cbind</span>(<span class="dv">10</span>^(<span class="fl">0.4</span>*(<span class="fl">12.09</span><span class="dv">-15</span>)),<span class="dv">10</span>^(<span class="fl">0.4</span>*(G<span class="dv">-15</span>))), <span class="dv">1</span>, max)
+  s_p =<span class="st"> </span><span class="kw">sqrt</span>(-<span class="fl">1.631+680.766</span>*z<span class="fl">+32.732</span>*z^<span class="dv">2</span>)*(<span class="fl">0.986</span>+(<span class="dv">1</span><span class="fl">-0.986</span>)*VminusI)
+  <span class="kw">return</span>(s_p)
+}</code></pre></div>
+<p>Let us plot the curve</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">G &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">6</span>,<span class="dv">21</span>,<span class="fl">0.1</span>)
+VminusI &lt;-<span class="st"> </span>G/G 
+<span class="kw">plot</span>(G,<span class="kw">Gaia_s_p</span>(VminusI,G),<span class="dt">ty=</span><span class="st">&quot;l&quot;</span>,<span class="dt">xlab=</span><span class="st">&quot;G magnitude&quot;</span>, <span class="dt">ylab=</span><span class="st">&quot;parallax uncertainty in microarcseconds&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>Beware! it is in microarcseconds!</p>
+<p>So, let us go to Example 1: a V-I colour index of 1 and G=20</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">VminusI &lt;-<span class="st"> </span><span class="fl">1.0</span>
+s_p &lt;-<span class="st"> </span><span class="kw">Gaia_s_p</span>(VminusI,<span class="dv">20</span>)/<span class="fl">10.0</span>^<span class="dv">6</span> <span class="co"># To convert to arcseconds  </span>
+d.true &lt;-<span class="st"> </span><span class="dv">100</span> <span class="co"># Measured in parsecs</span>
+p.true &lt;-<span class="st"> </span><span class="dv">1</span>/d.true
+nr.values &lt;-<span class="st"> </span><span class="dv">200</span>
+values &lt;-<span class="st"> </span><span class="kw">seq</span>(p.true<span class="dv">-5</span>*s_p,p.true<span class="dv">+5</span>*s_p,<span class="dt">length.out=</span>nr.values)
+tmp &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA</span>,nr.values)
+for (i in <span class="dv">1</span>:<span class="kw">length</span>(values))
+{
+  tmp[i] &lt;-<span class="st"> </span><span class="kw">likelihood</span>(values[i],d.true,s_p)  
+}
+<span class="kw">plot</span>(values,tmp, <span class="dt">ty=</span><span class="st">&quot;l&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;Parallax&quot;</span>, <span class="dt">ylab=</span><span class="st">&quot;Likelihood&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">require</span>(caTools)
+<span class="kw">trapz</span>(values,tmp)</code></pre></div>
+<pre><code>## [1] 0.9999994</code></pre>
+<p>And now for the distance</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(<span class="fl">1.0</span>/values,tmp, <span class="dt">ty=</span><span class="st">&quot;l&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;Distance in parsecs&quot;</span>, <span class="dt">ylab=</span><span class="st">&quot;Likelihood&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Unfortunately, not everything is at a distance of 100 parsecs…</p>
+<ul>
+<li>Example II: same colour index, but at 4 kpc</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">VminusI &lt;-<span class="st"> </span><span class="fl">1.0</span>
+s_p &lt;-<span class="st"> </span><span class="kw">Gaia_s_p</span>(VminusI,<span class="dv">20</span>)/<span class="fl">10.0</span>^<span class="dv">6</span> <span class="co"># To convert to arcseconds  </span>
+d.true &lt;-<span class="st"> </span><span class="dv">4000</span> <span class="co"># Measured in parsecs</span>
+p.true &lt;-<span class="st"> </span><span class="dv">1</span>/d.true
+nr.values &lt;-<span class="st"> </span><span class="dv">200</span>
+values &lt;-<span class="st"> </span><span class="kw">seq</span>(p.true<span class="dv">-5</span>*s_p,p.true<span class="dv">+5</span>*s_p,<span class="dt">length.out=</span>nr.values)
+tmp &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA</span>,nr.values)
+for (i in <span class="dv">1</span>:<span class="kw">length</span>(values))
+{
+  tmp[i] &lt;-<span class="st"> </span><span class="kw">likelihood</span>(values[i],d.true,s_p)  
+}
+<span class="kw">plot</span>(values,tmp, <span class="dt">ty=</span><span class="st">&quot;l&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;Parallax&quot;</span>, <span class="dt">ylab=</span><span class="st">&quot;Likelihood&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">require</span>(caTools)
+<span class="kw">trapz</span>(values,tmp)</code></pre></div>
+<pre><code>## [1] 0.9999994</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(<span class="fl">1.0</span>/values,tmp, <span class="dt">ty=</span><span class="st">&quot;l&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;Distance in parsecs&quot;</span>, <span class="dt">ylab=</span><span class="st">&quot;Likelihood&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">filter &lt;-<span class="st"> </span>(<span class="fl">1.0</span>/values &gt;<span class="st"> </span><span class="dv">0</span>)
+<span class="kw">plot</span>(<span class="fl">1.0</span>/values[filter],tmp[filter], <span class="dt">ty=</span><span class="st">&quot;l&quot;</span>, <span class="dt">xlab=</span><span class="st">&quot;Distance in parsecs&quot;</span>, <span class="dt">ylab=</span><span class="st">&quot;Likelihood&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p>And basically, any distance beyond 4kp is likely.</p>
+<p>Lessons learnt:</p>
+<ul>
+<li>The likelihood is a function of the data, it is a probability distribution for the data, not for the parameters.</li>
+<li>For Gaussian uncertainties in the parallax, the uncertainties in distance can be highly asymetric.</li>
+<li>The likelihood as a function of distance, is not a probability distribution and should not be interpreted as such.</li>
+<li>The usual Taylor expansion</li>
+</ul>
+<p><span class="math inline">\(d_{est}=1/\tilde\varpi\pm\frac{\sigma_{\varpi}{\tilde\varpi^2}}\)</span></p>
+<p>is just wrong. Plain wrong. And you can get meaningless results if you quote confidence intervals in your work.</p>
+</div>
+<div id="bayesian-inference" class="section level1">
+<h1>Bayesian inference</h1>
+<p>Here is Bayes Theorem</p>
+<p><span class="math display">\[ p(\theta|\mathcal{D}) = \frac{p(\mathcal{D}|\theta)\cdot p(\theta)}{p(\mathcal{D})}\]</span></p>
+<p>Let me define three priors. First, the improper uniform prior</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">prior.iu&lt;-function(r) 
+  {
+  <span class="kw">return</span>(<span class="dv">1</span>)
+}</code></pre></div>
+<p>Then, the uniform truncated prior</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">prior.u&lt;-function(r,rlim) 
+  {
+  if (r &lt;=<span class="st"> </span>rlim) <span class="kw">return</span>(<span class="dv">1</span>/rlim) else <span class="kw">return</span>(<span class="dv">0</span>)
+}</code></pre></div>
+<p>And then define the posterior function</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">unnormalized.posterior &lt;-<span class="st"> </span>function(prior,likelihood)
+  {
+  u_posterior &lt;-<span class="st"> </span>prior*likelihood
+  <span class="kw">return</span>(u_posterior)
+}</code></pre></div>
+<p>And, in the philosophy of the paper, let us draw conclusions not from a single measurement, but from large samples of sources .In order to fix ideas, let us generate samples up to a maximum distance rlim=1000 parsecs</p>
+<p>The case of the improper uniform prior is entirely equivalent to the frequentist approach that only considers the likelihood. This is highly unphysical, because it implies a stellar density decaying a <span class="math inline">\(r^{-\frac{1}{3}}\)</span> with peak density at the Sun</p>
+<p>For the truncated uniform prior R has simple functions to sample.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">rlim=<span class="dv">1000</span>
+true_r_sample &lt;-<span class="st"> </span><span class="kw">runif</span>(<span class="dv">1000</span>,<span class="dv">0</span>,rlim)
+true_p_sample &lt;-<span class="st"> </span><span class="dv">1</span>/true_r_sample</code></pre></div>
+<p>OK. Let us see how our inferences change with varying signal-to-noise ratio. We will define it as</p>
+<p><span class="math display">\[f=\frac{\sigma_\varpi}{\varpi}\]</span></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">f &lt;-<span class="st"> </span><span class="kw">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="fl">0.01</span>) <span class="co"># This is sigma_p/p (see Bailer-Jones, 2015)</span></code></pre></div>
+<p>Now, let us generate the observations by adding noise</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">measured_p_sample &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA</span>, <span class="kw">length</span>(true_r_sample))
+bias &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA</span>,<span class="kw">length</span>(f))
+sd &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="ot">NA</span>,<span class="kw">length</span>(f))
+<span class="co"># Loop over signal to noise (actually noise-to-signal) ratios</span>
+for (j in <span class="dv">1</span>:<span class="kw">length</span>(f)) <span class="co"># This f is sigma/p</span>
+{
+  s_p_sample &lt;-<span class="st"> </span>f[j]*true_p_sample
+<span class="co"># Create a realization of the noise for f</span>
+    for (i in <span class="dv">1</span>:<span class="kw">length</span>(true_p_sample)){
+    measured_p_sample[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>,true_p_sample[i],s_p_sample[i])
+  }
+
+  estimated_r_sample &lt;-<span class="st"> </span><span class="fl">1.0</span>/measured_p_sample <span class="co"># For flat unbounded priors, there is no need to compute the posterior</span>
+  filter &lt;-<span class="st"> </span>measured_p_sample &gt;<span class="st"> </span><span class="dv">0</span>
+  scaled_residuals &lt;-<span class="st"> </span>(estimated_r_sample[filter]-true_r_sample[filter])/true_r_sample[filter]
+  bias[j] &lt;-<span class="st"> </span><span class="kw">mean</span>(scaled_residuals)
+  sd[j] &lt;-<span class="st"> </span><span class="kw">sd</span>(scaled_residuals)
+}</code></pre></div>
+<p>And let us plot it…</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(f,bias,<span class="dt">ty=</span><span class="st">&quot;l&quot;</span>,<span class="dt">ylim=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">500</span>),<span class="dt">ylab=</span><span class="st">&quot;Bias (black) and Std. Dev. (Blue)&quot;</span>)
+<span class="kw">lines</span>(f,sd,<span class="dt">ty=</span><span class="st">&quot;l&quot;</span>,<span class="dt">ylim=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">500</span>),<span class="dt">col=</span><span class="st">&quot;blue&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(f,bias,<span class="dt">ty=</span><span class="st">&quot;l&quot;</span>,<span class="dt">ylim=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">1</span>),<span class="dt">ylab=</span><span class="st">&quot;Bias (black) and Std. Dev. (Blue)&quot;</span>)
+<span class="kw">lines</span>(f,sd,<span class="dt">ty=</span><span class="st">&quot;l&quot;</span>,<span class="dt">ylim=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">1</span>),<span class="dt">col=</span><span class="st">&quot;blue&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p>Try a second experiment using a truncated proper prior:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">for (j in <span class="dv">1</span>:<span class="kw">length</span>(f)) <span class="co"># </span>
+{
+  s_p_sample &lt;-<span class="st"> </span>f[j]*true_p_sample
+  for (i in <span class="dv">1</span>:<span class="kw">length</span>(true_p_sample)){
+    measured_p_sample[i] &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">1</span>,true_p_sample[i],s_p_sample[i])
+  }
+  estimated_r_sample &lt;-<span class="st"> </span><span class="fl">1.0</span>/measured_p_sample
+  estimated_r_sample[measured_p_sample &lt;<span class="dv">0</span> |<span class="st"> </span>estimated_r_sample &gt;<span class="st"> </span>rlim] &lt;-<span class="st"> </span>rlim
+<span class="co"># Try this code block with the following line uncommented </span>
+<span class="co">#  filter &lt;- rep(TRUE,length(measured_p_sample))</span>
+  scaled_residuals &lt;-<span class="st"> </span>(estimated_r_sample[filter]-true_r_sample[filter])/true_r_sample[filter]
+  bias[j] &lt;-<span class="st"> </span><span class="kw">mean</span>(scaled_residuals)
+  sd[j] &lt;-<span class="st"> </span><span class="kw">sd</span>(scaled_residuals)
+}
+
+<span class="kw">plot</span>(f,bias,<span class="dt">ty=</span><span class="st">&quot;l&quot;</span>,<span class="dt">ylim=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">5</span>),<span class="dt">ylab=</span><span class="st">&quot;Bias (black) and Std. Dev. (Blue)&quot;</span>)
+<span class="kw">lines</span>(f,sd,<span class="dt">ty=</span><span class="st">&quot;l&quot;</span>,<span class="dt">ylim=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">5</span>),<span class="dt">col=</span><span class="st">&quot;blue&quot;</span>)</code></pre></div>
+<p><img src="CBayesianInference_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+</div>
+<div id="proposed-experiment" class="section level1">
+<h1>Proposed experiment</h1>
+<ol style="list-style-type: decimal">
+<li>Generate a sample from a constant volume density</li>
+<li>Code a prior that represents constant density (Eq. 9 in Bailer-Jones, 15)</li>
+<li>Compute the (unnormalized) posterior and plot it for several choices of d, NSR and/or measured parallaxes</li>
+<li>Code the values of the mode of the posterior, and compute them for the sample. (Eqs. 16 in Bailer-Jones, 15)</li>
+<li>Plot the bias and variance</li>
+</ol>
+<p><strong>Hints</strong></p>
+<p>For prior probabilities different from the classical ones, we first have to define the cumulative distribution function of the prior. Take for example, the prior that corresponds to a uniform density:</p>
+<p><span class="math display">\[ \frac{N(V)}{V} = const\]</span></p>
+<p>if <span class="math display">\[ {\rm d}V=4\pi r^2 {\rm d}r\]</span></p>
+<p>Since the density of stars has to remain constant, we have that</p>
+<p><span class="math display">\[\int_0^{r_{lim}} p(r){\rm d}r = 1\]</span></p>
+<p><span class="math display">\[\int_0^{r_{lim}} N(r){\rm d}r = N_{tot}\]</span></p>
+<p>so clearly</p>
+<p><span class="math display">\[p(r)=\frac{N(r)}{N_{tot}}\]</span></p>
+<p><span class="math display">\[ const = \frac{N_{tot}\cdot p(r)\cdot{\rm d}r}{4\pi r^2\cdot {\rm d}r}\]</span></p>
+<p>so…</p>
+<p><span class="math display">\[p(r)\propto r^{2}\]</span></p>
+<p>and the CDF</p>
+<p><span class="math display">\[P(R)= \int_0^{r=R} p(r)\cdot {\rm d}r\propto r^{3}\]</span></p>
+<p>and the inverse function (from probabilities to radii) is</p>
+<p><span class="math display">\[r \propto P(R)^\frac{1}{3}\]</span></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">icdf.const.dens &lt;-<span class="st"> </span>function(P)
+{
+  if(!<span class="kw">exists</span>(<span class="st">&quot;rlim&quot;</span>) |<span class="st"> </span><span class="kw">is.na</span>(rlim)) <span class="kw">print</span>(<span class="st">&quot;Error: maximum radius undefined&quot;</span>)
+  r &lt;-<span class="st"> </span>((rlim^<span class="dv">3</span>)*P)^(<span class="fl">1.0</span>/<span class="fl">3.0</span>) <span class="co"># This is the prescription for a constant stellar volume density</span>
+  <span class="kw">return</span>(r)
+  }</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">gen.data &lt;-<span class="st"> </span>function(n,icdf.spatial.dens)
+{
+  x &lt;-<span class="st"> </span><span class="kw">runif</span>(n)
+  r &lt;-<span class="st"> </span><span class="kw">icdf.spatial.dens</span>(x)
+    <span class="kw">return</span>(r)
+}
+
+r_sample &lt;-<span class="st"> </span><span class="kw">gen.data</span>(<span class="dv">1000</span>,icdf.const.dens)</code></pre></div>
+</div>
+<div id="second-exercise" class="section level1">
+<h1>Second exercise</h1>
+<ol style="list-style-type: decimal">
+<li>Generate a sample from an exponentially decreasing density (Eq. 17 in Bailer-Jones, 15; L=10^3)</li>
+<li>Code a prior that represents this exponentially decreasing density</li>
+<li>Compute the (unnormalized) posterior (Eq 18) and plot it for several choices of d, NSR and/or measured parallaxes</li>
+<li>Compute the roots of the posterior as in page 13-14 of Bailer-Jones, 2015.</li>
+<li>Plot the bias and variance</li>
+<li>Play with the value of L</li>
+</ol>
+</div>
+
+<html>
+
+<head>
+<title>Title</title>
+</head>
+
+<body>
+
+<img src="images/Footnote.png" alt="School Footer">
+
+</body>
+</html>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

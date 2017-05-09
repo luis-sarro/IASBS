@@ -8,6 +8,8 @@ navbar:
       href: AFeatureExtractionSelection.html
     - text: "Unsupervised Classification"
       href: BUnsupervisedClassification.html
+    - text: "Bayesian Inference"
+      href: CBayesianInference.html
 output_dir: "."      
       
       
